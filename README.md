@@ -41,3 +41,11 @@ ufw route allow in on incusbr0
 incus network set incusbr0 ipv4.dhcp=true
 incus network set incusbr0 ipv6.dhcp.stateful=true
 ```
+
+### это ручное определение IP для контейнера вместо авто по dhcp
+```sh
+incus stop CONTAINER
+incus config device remove CONTAINER eth0
+incus config device add CONTAINER eth0 nic network=incusbr0 name=eth0 ipv4.address=IPV4ADDR ipv6.address=IPV6ADDR
+incus start awg
+```
