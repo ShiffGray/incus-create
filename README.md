@@ -41,6 +41,9 @@ ufw route allow in on incusbr0
 incus network set incusbr0 ipv4.dhcp=true
 incus network set incusbr0 ipv6.dhcp.stateful=true
 ```
+```sh
+incus profile show default
+```
 
 ### это ручное определение IP для контейнера вместо авто по dhcp
 ```sh
