@@ -14,16 +14,18 @@ incus admin init
 incus config set core.https_address=:24550 && incus config get core.https_address
 ```
 ```sh
-incus profile set default security.privileged=true
-incus profile set default linux.kernel_modules=ifb,wireguard
-incus profile set default boot.autostart=true
-incus profile set default security.protection.delete=true
-```
-```sh
 systemctl restart incus
 ```
 ```sh
 incus list
+```
+
+### ну вот это нужный мне но спорный момент с выдачей высоких привелегий и прочего прям на default профиль
+```sh
+incus profile set default security.privileged=true
+incus profile set default linux.kernel_modules=ifb,wireguard
+incus profile set default boot.autostart=true
+incus profile set default security.protection.delete=true
 ```
 
 # incus сеть
