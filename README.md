@@ -25,5 +25,5 @@ incus network set incusbr0 ipv6.dhcp.stateful=true
 systemctl restart incus
 ```
 ```sh
-systemctl restart incus
+incus list
 ```
