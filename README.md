@@ -1,5 +1,6 @@
 # incus-create
 
+### это устанока и первая настройка
 ```sh
 apt update -y && apt upgrade -y && apt install curl sudo ufw btop tmux nano -y
 ```
