@@ -27,7 +27,7 @@ incus list
 
 # incus сеть
 
-## вот это вот базовые настройки сети
+### вот это вот базовые настройки сети
 ```sh
 ufw allow in on incusbr0
 ufw allow out on incusbr0
