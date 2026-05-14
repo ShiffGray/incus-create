@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Incus Web UI Installer v2.0
-# Ubuntu 20-25 | Debian 11-13
+# Incus Web UI Installer v2.1
+# Ubuntu 20-26 | Debian 11-13
 #
 
 set -e
@@ -90,9 +90,9 @@ check_os() {
         ubuntu)
             case "$OS_VERSION" in
                 20.04|22.04) REPO_CODENAME="jammy" ;;
-                24.04|25.04) REPO_CODENAME="noble" ;;
+                24.04|25.04|25.10|26.04) REPO_CODENAME="noble" ;;
                 *)
-                    log_error "Поддерживается только Ubuntu 20.04-25.04"
+                    log_error "Поддерживается только Ubuntu 20.04-26.04"
                     exit 1
                     ;;
             esac
@@ -240,8 +240,8 @@ main() {
 
     echo
     echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║      Incus Web UI Installer v2.0       ║${NC}"
-    echo -e "${GREEN}║  Ubuntu 20-25 | Debian 11-13           ║${NC}"
+    echo -e "${GREEN}║      Incus Web UI Installer v2.1       ║${NC}"
+    echo -e "${GREEN}║  Ubuntu 20-26 | Debian 11-13           ║${NC}"
     echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
     echo
 
