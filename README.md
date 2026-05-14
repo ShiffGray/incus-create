@@ -12,14 +12,20 @@ incus admin init
 incus config set core.https_address=:24550 && incus config get core.https_address
 ```
 ```sh
+ufw allow in on incusbr0
+ufw allow out on incusbr0
+ufw allow in on incusbr0 to any
+ufw route allow in on incusbr0
+```
+```sh
+incus network set incusbr0 ipv4.dhcp=true
+incus network set incusbr0 ipv6.dhcp.stateful=true
+```
+```sh
 incus profile set default security.privileged=true
 incus profile set default linux.kernel_modules=ifb,wireguard
 incus profile set default boot.autostart=true
 incus profile set default security.protection.delete=true
-ufw allow in on incusbr0
-ufw allow out on incusbr0
-incus network set incusbr0 ipv4.dhcp=true
-incus network set incusbr0 ipv6.dhcp.stateful=true
 ```
 ```sh
 systemctl restart incus
