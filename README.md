@@ -11,7 +11,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/h
 incus admin init
 ```
 ```sh
-incus config set core.https_address=:PORT && incus config get core.https_address
+incus config set core.https_address=:#PORT && incus config get core.https_address
 ```
 ```sh
 systemctl restart incus
