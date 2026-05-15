@@ -11,7 +11,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/h
 incus admin init
 ```
 ```sh
-incus config set core.https_address=:@PORT && incus config get core.https_address
+incus config set core.https_address=:PORT! && incus config get core.https_address
 ```
 ```sh
 systemctl restart incus
@@ -47,8 +47,8 @@ incus profile show default
 
 ### это ручное определение IP для контейнера вместо авто по dhcp
 ```sh
-incus stop @CONTAINER
-incus config device remove @CONTAINER eth0
-incus config device add @CONTAINER eth0 nic network=incusbr0 name=eth0 ipv4.address=@IPV4ADDR ipv6.address=@IPV6ADDR
-incus start @CONTAINER
+incus stop CONTAINER
+incus config device remove CONTAINER eth0
+incus config device add CONTAINER eth0 nic network=incusbr0 name=eth0 ipv4.address=IPV4ADDR ipv6.address=IPV6ADDR
+incus start CONTAINER
 ```
