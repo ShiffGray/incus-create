@@ -27,25 +27,26 @@ incus profile set default linux.kernel_modules=ifb,wireguard
 incus profile set default boot.autostart=true
 incus profile set default security.protection.delete=true
 ```
+```sh
+incus profile show default
+```
 
 # incus сеть
 
-### вот это вот базовые настройки сети
+#### вот это вот базовые настройки сети
+#### если используеться ufw то надо добавить разрешения на локальный сетевой мост контейнеров
 ```sh
 ufw allow in on incusbr0
 ufw allow out on incusbr0
 ufw allow in on incusbr0 to any
 ufw route allow in on incusbr0
 ```
+#### ну и ещё можно dhcp включить потому что иначе адресы не будут выдаваться автоматически
 ```sh
 incus network set incusbr0 ipv4.dhcp=true
 incus network set incusbr0 ipv6.dhcp.stateful=true
 ```
-```sh
-incus profile show default
-```
-
-### это ручное определение IP для контейнера вместо авто по dhcp
+#### но кстати можно и вручную прописать конкретные адреса контейнерам вот так
 ```sh
 incus stop CONTAINER
 incus config device remove CONTAINER eth0
@@ -54,8 +55,8 @@ incus start CONTAINER
 ```
 
 # ещё приколы с файрволом
-### да мне нужно было прокинуть порт в контейнер и я сделал это через панель
-### но как обычно из-за ufw оно как не работало и мне помагло вот это
+#### да мне нужно было прокинуть порт в контейнер и я сделал это через панель
+#### но как обычно из-за ufw оно как не работало и мне помагло вот это
 ```sh
 ufw route allow proto tcp from any to 172.24.10.2 port 12280
 ```
