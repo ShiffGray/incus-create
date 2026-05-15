@@ -65,3 +65,19 @@ sudo hostnamectl set-hostname НОВОЕ_ИМЯ
 ```sh
 sudo nano /etc/hosts
 ```
+
+### сгенерировать и засунуть в incus ssl сертификат
+```sh
+gen_cert() {
+	openssl ecparam -genkey -name prime256v1 -out "$NAME.key"
+	openssl req -new -key "$NAME.key" -out "$NAME.csr" -subj "$SUBJ"
+	openssl x509 -req -in "$NAME.csr" -signkey "$NAME.key" -out "$NAME.crt" -days "$DAYS" -sha256
+	openssl pkcs12 -export -out "$NAME.pfx" -inkey "$NAME.key" -in "$NAME.crt" -passout pass:"$PASS"
+	incus config trust add-certificate $NAME.crt
+}
+NAME="имя"
+SUBJ="/CN=хостинг_КОД_имя"
+DAYS="36500"
+PASS="ПАРОЛЬ"
+gen_cert
+```
