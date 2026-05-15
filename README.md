@@ -10,7 +10,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/h
 incus admin init
 ```
 ```sh
-incus config set core.https_address=:PORT && incus config get core.https_address
+incus config set core.https_address=:ПОРТ && incus config get core.https_address
 ```
 ```sh
 systemctl restart incus
@@ -44,14 +44,24 @@ incus network set incusbr0 ipv6.dhcp.stateful=true
 ```
 ### но кстати можно и вручную прописать конкретные адреса контейнерам вот так
 ```sh
-incus stop CONTAINER
-incus config device remove CONTAINER eth0
-incus config device add CONTAINER eth0 nic network=incusbr0 name=eth0 ipv4.address=IPV4ADDR ipv6.address=IPV6ADDR
-incus start CONTAINER
+incus stop ИМЯ_КОНТЕЙНЕРА
+incus config device remove ИМЯ_КОНТЕЙНЕРА eth0
+incus config device add ИМЯ_КОНТЕЙНЕРА eth0 nic network=incusbr0 name=eth0 ipv4.address=АДРЕСV4 ipv6.address=АДРЕСV6
+incus start ИМЯ_КОНТЕЙНЕРА
 ```
 ### ещё приколы с файрволом
 ### мне нужно было прокинуть порт в контейнер и я сделал это через панель
 ### но как обычно из-за ufw оно не работало и мне помагло вот это
 ```sh
 ufw route allow proto tcp from any to 172.24.10.2 port 12280
+```
+
+# я вообще кстати собираюсь наверное использовать этот репозиторий под свои записки так что да это нормально то что тут дальше будут не связанные с incusui инструкции и так далее
+### имя хоста можно сменить вот так
+```sh
+sudo hostnamectl set-hostname НОВОЕ_ИМЯ
+```
+#### но только плюс было бы не плохо так же проверить и отредактировать
+```sh
+sudo nano /etc/hosts
 ```
