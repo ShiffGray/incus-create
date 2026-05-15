@@ -85,3 +85,8 @@ gen_cert
 ```sh
 ssh-keygen -t ed25519 -b 5120 -f ПУТЬ/ИМЯ -N КОД/ПАРОЛЬ -a 480 -q
 ```
+
+### включить пролистывание в tmux сессиях
+```sh
+echo "set -g mouse on" >> ~/.tmux.conf && tmux source-file ~/.tmux.conf
+```
