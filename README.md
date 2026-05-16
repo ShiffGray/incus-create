@@ -30,6 +30,9 @@ incus profile show default
 ```
 
 # incus сеть
+```sh
+sudo modprobe br_netfilter && echo "br_netfilter" | sudo tee /etc/modules-load.d/br_netfilter.conf
+```
 ### если используеться ufw то надо добавить разрешения на локальный сетевой мост контейнеров
 ```sh
 ufw allow in on incusbr0
