@@ -87,7 +87,11 @@ gen_cert
 #### Ну и потому можно добавить в incus этот сертификат, а так же удалить его по fingerprint
 ```sh
 incus config trust add-certificate ИМЯ.crt
+```
+```sh
 incus config trust list
+```
+```sh
 incus config trust remove FINGERPRINT
 ```
 
