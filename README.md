@@ -78,15 +78,15 @@ gen_cert() {
 	openssl pkcs12 -export -out "$NAME.pfx" -inkey "$NAME.key" -in "$NAME.crt" -passout pass:"$PASS"
 	incus config trust add-certificate $NAME.crt
 }
-NAME="имя"
-SUBJ="/CN=хостинг_страна-номер_имя"
+NAME="ИМЯ"
+SUBJ="/CN=ХОСТИНГ_СТРАНА-НОМЕР_ИМЯ"
 DAYS="36500"
-PASS="пароль"
+PASS="ПАРОЛЬ"
 gen_cert
 ```
 ### сгенерировать ssh ключ
 ```sh
-ssh-keygen -t ed25519 -b 5120 -f ПУТЬ/ИМЯ -N КОД/ПАРОЛЬ -a 480 -q
+ssh-keygen -t ed25519 -b 5120 -f ПУТЬ/ИМЯ -N ПАРОЛЬ_КЛЮЧА -a 480 -q
 ```
 
 ### включить пролистывание в tmux сессиях
