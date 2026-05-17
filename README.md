@@ -84,6 +84,13 @@ DAYS="36500"
 PASS="ПАРОЛЬ"
 gen_cert
 ```
+#### Ну и потому можно добавить в incus этот сертификат, а так же удалить его по fingerprint
+```sh
+incus config trust add-certificate ИМЯ.crt
+incus config trust list
+incus config trust remove FINGERPRINT
+```
+
 ### сгенерировать ssh ключ
 ```sh
 ssh-keygen -t ed25519 -b 5120 -f ПУТЬ/ИМЯ -N ПАРОЛЬ_КЛЮЧА -a 480 -q
