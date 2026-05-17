@@ -79,7 +79,7 @@ gen_cert() {
 	incus config trust add-certificate $NAME.crt
 }
 NAME="имя"
-SUBJ="/CN=хостинг_КОД_имя"
+SUBJ="/CN=хостинг_страна-номер_имя"
 DAYS="36500"
 PASS="ПАРОЛЬ"
 gen_cert
