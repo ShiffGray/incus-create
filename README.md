@@ -71,6 +71,7 @@ sudo nano /etc/hosts
 
 ### сгенерировать и засунуть в incus ssl сертификат
 ```sh
+cd /root/.ssh
 gen_cert() {
 	openssl ecparam -genkey -name prime256v1 -out "$NAME.key"
 	openssl req -new -key "$NAME.key" -out "$NAME.csr" -subj "$SUBJ"
