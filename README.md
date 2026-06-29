@@ -77,7 +77,6 @@ gen_cert() {
 	openssl req -new -key "$NAME.key" -out "$NAME.csr" -subj "$SUBJ"
 	openssl x509 -req -in "$NAME.csr" -signkey "$NAME.key" -out "$NAME.crt" -days "$DAYS" -sha256
 	openssl pkcs12 -export -out "$NAME.pfx" -inkey "$NAME.key" -in "$NAME.crt" -passout pass:"$PASS"
-	incus config trust add-certificate $NAME.crt
 }
 NAME="ИМЯ"
 SUBJ="/CN=ХОСТИНГ_СТРАНА-НОМЕР_ИМЯ"
