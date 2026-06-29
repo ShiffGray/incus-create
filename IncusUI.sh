@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Incus Web UI Installer v2.1
+# Incus Web UI Installer v2.2
 # Ubuntu 20-26 | Debian 11-13
 #
 
@@ -240,7 +240,7 @@ main() {
 
     echo
     echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║      Incus Web UI Installer v2.1       ║${NC}"
+    echo -e "${GREEN}║      Incus Web UI Installer v2.2       ║${NC}"
     echo -e "${GREEN}║  Ubuntu 20-26 | Debian 11-13           ║${NC}"
     echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
     echo
