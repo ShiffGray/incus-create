@@ -116,36 +116,12 @@ bind_incus() {
     fi
 }
 
-# ─── Инструкция ────────────────────────────────────
-print_instructions() {
-    echo ""
-    echo "   ─── Инструкция ───"
-    echo ""
-    echo "   Импорт PFX в браузер:"
-    echo ""
-    echo "   Windows (Chrome/Edge/Firefox):"
-    echo "     Открыть $OUTDIR/$NAME.pfx"
-    echo "     Ввести пароль, установить в 'Личное'"
-    echo ""
-    echo "   macOS:"
-    echo "     open $OUTDIR/$NAME.pfx"
-    echo ""
-    echo "   Linux (Chrome):"
-    echo "     chrome://settings/security -> Управление сертификатами"
-    echo "     Импорт -> $OUTDIR/$NAME.pfx"
-    echo ""
-    echo "   После импорта — привяжите сертификат к IncusUI:"
-    echo ""
-    echo "   incus config trust add-certificate $OUTDIR/$NAME.crt"
-    echo ""
-}
-
 # ─── Главная ──────────────────────────────────────
 main() {
     echo ""
     echo -e "${GREEN}╔══════════════════════════════╗${NC}"
     echo -e "${GREEN}║        gen-cert v1.3         ║${NC}"
-    echo -e "${GREEN}║    ECDSA + PFX генератор     ║${NC}"
+    echo -e "${GREEN}║         ECDSA + PFX          ║${NC}"
     echo -e "${GREEN}╚══════════════════════════════╝${NC}"
     echo ""
 
@@ -157,7 +133,6 @@ main() {
 
     gen_cert
     bind_incus
-    print_instructions
 
     log_success "Готово: $OUTDIR/$NAME.{key,crt,pfx}"
     echo ""
