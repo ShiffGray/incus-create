@@ -104,3 +104,8 @@ ssh-keygen -t ed25519 -b 5120 -f ПУТЬ/ИМЯ -N ПАРОЛЬ_КЛЮЧА -a 4
 ```sh
 echo "set -g mouse on" >> ~/.tmux.conf && tmux source-file ~/.tmux.conf
 ```
+
+### поставить русский язык 
+```sh
+echo 'ru_RU.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen && update-locale LANG=ru_RU.UTF-8
+```
