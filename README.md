@@ -26,7 +26,7 @@ systemctl restart incus
 incus list
 ```
 ### ну вот это нужный мне но спорный момент с выдачей высоких привелегий и прочего прям на default профиль
-#### я использую это для многих контейнеров потому что использую в них VPN
+#### я использую это потому что у меня во многих контейнерах крутиться VPN
 ```sh
 incus profile set default security.privileged=true
 incus profile set default linux.kernel_modules=ifb,wireguard
