@@ -31,13 +31,8 @@ parse_flags() {
             -n) NAME="$2"; shift 2 ;;
             -d) DAYS="$2"; shift 2 ;;
             -o) OUTDIR="$2"; shift 2 ;;
-            --help|-h)
-                echo "gen-cert -n <имя> [-d <дни>] [-o <папка>]"
-                echo "  -n <имя>      имя файлов (обязательно)"
-                echo "  -d <дни>       срок (по умолч. 36500)"
-                echo "  -o <папка>     куда сохранить (по умолч. ~/.ssh/)"
-                exit 0 ;;
-            *) log_error "Неизвестный флаг: $1"; exit 1 ;;
+            --help|-h) echo "$HELP_USAGE"; echo "$HELP_FLAGS"; exit 0 ;;
+            *) log_error "$MSG_UNKNOWN_FLAG $1"; exit 1 ;;
         esac
     done
 }
@@ -45,79 +40,62 @@ parse_flags() {
 # ─── Запрос данных ─────────────────────────────────
 ask_name() {
     while [ -z "$NAME" ]; do
-        read -r -p "Имя файла (напр. $HOSTNAME): " NAME
+        read -r -p "$MSG_ASK_NAME $HOSTNAME): " NAME
     done
 }
 
 ask_desc() {
-    read -r -p "Описание (напр. ${HOSTNAME}_home, Enter = как имя): " DESC
-    if [ -z "$DESC" ]; then
-        DESC="$NAME"
-    fi
+    read -r -p "$MSG_ASK_DESC ${HOSTNAME}_home, $MSG_ENTER_EQ_NAME): " DESC
+    if [ -z "$DESC" ]; then DESC="$NAME"; fi
 }
 
 ask_pass() {
-    read -s -p "Пароль для PFX (напр. 123456, Enter = без пароля): " PASS
-    echo ""
+    read -s -p "$MSG_ASK_PASS 123456, $MSG_ENTER_NOPASS): " PASS; echo ""
 }
 
 ask_days() {
-    read -r -p "Срок в днях (Enter = 36500): " DAYS_INPUT
-    if [ -n "$DAYS_INPUT" ]; then
-        DAYS="$DAYS_INPUT"
-    fi
+    read -r -p "$MSG_ASK_DAYS 36500): " DAYS_INPUT
+    if [ -n "$DAYS_INPUT" ]; then DAYS="$DAYS_INPUT"; fi
 }
 
 # ─── Генерация ─────────────────────────────────────
 gen_cert() {
-    log_info "Генерация сертификата: $NAME"
-
+    log_info "$MSG_GEN_START $NAME"
     mkdir -p "$OUTDIR"
-
-    local KEY="$OUTDIR/$NAME.key"
-    local CSR="$OUTDIR/$NAME.csr"
-    local CRT="$OUTDIR/$NAME.crt"
-    local PFX="$OUTDIR/$NAME.pfx"
-    local SUBJ="/CN=$DESC"
-
+    local KEY="$OUTDIR/$NAME.key" CSR="$OUTDIR/$NAME.csr" CRT="$OUTDIR/$NAME.crt" PFX="$OUTDIR/$NAME.pfx" SUBJ="/CN=$DESC"
     rm -f "$KEY" "$CSR" "$CRT" "$PFX"
 
-    # ECDSA P-256 ключ
     openssl ecparam -genkey -name prime256v1 -out "$KEY" 2>/dev/null
-    log_success "Ключ: $KEY"
+    log_success "$MSG_GEN_KEY $KEY"
 
-    # Запрос (CSR)
     openssl req -new -key "$KEY" -out "$CSR" -subj "$SUBJ" 2>/dev/null
     log_success "CSR: $CSR"
 
-    # Подписанный сертификат
     openssl x509 -req -in "$CSR" -signkey "$KEY" -out "$CRT" -days "$DAYS" -sha256 2>/dev/null
-    log_success "Сертификат: $CRT ($DAYS дней)"
+    log_success "$MSG_GEN_CRT $CRT ($DAYS ${MSG_DAYS,,})"
 
-    # PFX
     openssl pkcs12 -export -out "$PFX" -inkey "$KEY" -in "$CRT" -passout pass:"$PASS" 2>/dev/null
     rm -f "$CSR"
     log_success "PFX: $PFX"
-
     chmod 600 "$KEY" "$CRT" "$PFX"
 }
 
 # ─── Привязка к Incus UI ──────────────────────────
 bind_incus() {
     if ! command -v incus &>/dev/null; then return; fi
-    # Проверяем что UI установлен (incus-ui-canonical или incus-ui)
     if ! dpkg -l 2>/dev/null | grep -qE "^ii.*incus-ui"; then return; fi
     local CRT="$OUTDIR/$NAME.crt"
     if [ ! -f "$CRT" ]; then return; fi
     if incus config trust add-certificate "$CRT" 2>/dev/null; then
-        log_success "Сертификат добавлен в доверенные Incus"
+        log_success "$MSG_INCUS_OK"
     else
-        log_warning "Не удалось добавить сертификат в Incus"
+        log_warning "$MSG_INCUS_FAIL"
     fi
 }
 
 # ─── Главная ──────────────────────────────────────
 main() {
+    init_lang
     echo ""
     echo -e "${GREEN}╔══════════════════════════════╗${NC}"
     echo -e "${GREEN}║        gen-cert v1.3         ║${NC}"
@@ -126,16 +104,54 @@ main() {
     echo ""
 
     parse_flags "$@"
-    ask_name
-    ask_desc
-    ask_days
-    ask_pass
+    ask_name; ask_desc; ask_days; ask_pass
 
     gen_cert
     bind_incus
 
-    log_success "Готово: $OUTDIR/$NAME.{key,crt,pfx}"
+    log_success "$MSG_DONE $OUTDIR/$NAME.{key,crt,pfx}"
     echo ""
+}
+
+# ══════════════════════════════════════════════════════
+# ─── Локализация ─────────────────────────────────────
+# ══════════════════════════════════════════════════════
+init_lang() {
+    if [[ "$LANG" == ru_RU* ]]; then
+        HELP_USAGE="gen-cert -n <имя> [-d <дни>] [-o <папка>]"
+        HELP_FLAGS="  -n <имя>      имя файлов (обязательно)"
+        MSG_UNKNOWN_FLAG="Неизвестный флаг:"
+        MSG_ASK_NAME="Имя файла (напр."
+        MSG_ASK_DESC="Описание (напр."
+        MSG_ASK_PASS="Пароль для PFX (напр."
+        MSG_ASK_DAYS="Срок в днях (Enter ="
+        MSG_ENTER_EQ_NAME="Enter = как имя"
+        MSG_ENTER_NOPASS="Enter = без пароля"
+        MSG_GEN_START="Генерация сертификата:"
+        MSG_GEN_KEY="Ключ:"
+        MSG_GEN_CRT="Сертификат:"
+        MSG_DAYS="дней"
+        MSG_INCUS_OK="Сертификат добавлен в доверенные Incus"
+        MSG_INCUS_FAIL="Не удалось добавить сертификат в Incus"
+        MSG_DONE="Готово:"
+    else
+        HELP_USAGE="gen-cert -n <name> [-d <days>] [-o <dir>]"
+        HELP_FLAGS="  -n <name>     filename prefix (required)"
+        MSG_UNKNOWN_FLAG="Unknown flag:"
+        MSG_ASK_NAME="Filename (e.g."
+        MSG_ASK_DESC="Description (e.g."
+        MSG_ASK_PASS="PFX password (e.g."
+        MSG_ASK_DAYS="Days (Enter ="
+        MSG_ENTER_EQ_NAME="Enter = same as name"
+        MSG_ENTER_NOPASS="Enter = no password"
+        MSG_GEN_START="Generating certificate:"
+        MSG_GEN_KEY="Key:"
+        MSG_GEN_CRT="Certificate:"
+        MSG_DAYS="days"
+        MSG_INCUS_OK="Certificate added to Incus trusted"
+        MSG_INCUS_FAIL="Failed to add certificate to Incus"
+        MSG_DONE="Done:"
+    fi
 }
 
 main "$@"
