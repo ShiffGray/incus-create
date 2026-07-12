@@ -1,5 +1,6 @@
 # incus-create
 ### это устанока и первая настройка
+#### я так же эту команду обычно исполняю внутри контейнеров
 ```sh
 apt update -y && apt upgrade -y && apt install curl sudo ufw btop tmux nano ssh -y
 ```
