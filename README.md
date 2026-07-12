@@ -28,7 +28,7 @@ incus config trust add-certificate ИМЯ.crt
 incus config trust list
 ```
 ```sh
-incus config trust remove FINGERPRINT
+incus config trust remove ФИНГЕРПРИНТ
 ```
 
 #### перезапустить incus
