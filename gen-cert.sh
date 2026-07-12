@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# gen-cert v1.3
+# gen-cert v1.4
 # Генерация ECDSA сертификатов + PFX
 #
 
@@ -99,7 +99,7 @@ main() {
     init_lang
     echo ""
     echo -e "${GREEN}╔══════════════════════════════╗${NC}"
-    echo -e "${GREEN}║        gen-cert v1.3         ║${NC}"
+    echo -e "${GREEN}║        gen-cert v1.4         ║${NC}"
     echo -e "${GREEN}║         ECDSA + PFX          ║${NC}"
     echo -e "${GREEN}╚══════════════════════════════╝${NC}"
     echo ""
@@ -132,8 +132,8 @@ init_lang() {
         MSG_GEN_KEY="Ключ:"
         MSG_GEN_CRT="Сертификат:"
         MSG_DAYS="дней"
-        MSG_INCUS_OK="Сертификат добавлен в доверенные Incus"
-        MSG_INCUS_FAIL="Не удалось добавить сертификат в Incus"
+        MSG_INCUS_OK="Сертификат добавлен в доверенные IncusUI"
+        MSG_INCUS_FAIL="Не удалось добавить сертификат в IncusUI"
         MSG_DONE="Готово:"
     else
         HELP_USAGE="gen-cert -n <name> [-d <days>] [-o <dir>]"
@@ -149,8 +149,8 @@ init_lang() {
         MSG_GEN_KEY="Key:"
         MSG_GEN_CRT="Certificate:"
         MSG_DAYS="days"
-        MSG_INCUS_OK="Certificate added to Incus trusted"
-        MSG_INCUS_FAIL="Failed to add certificate to Incus"
+        MSG_INCUS_OK="Certificate added to IncusUI trusted"
+        MSG_INCUS_FAIL="Failed to add certificate to IncusUI"
         MSG_DONE="Done:"
     fi
 }
