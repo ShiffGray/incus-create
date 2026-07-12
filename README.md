@@ -11,7 +11,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/h
 ```sh
 incus admin init
 ```
-### можно поменять или в принципе указать порт на котором будет работать веб
+#### можно поменять или в принципе указать порт на котором будет работать веб
 ```sh
 incus config set core.https_address=:ПОРТ && incus config get core.https_address
 ```
@@ -26,6 +26,7 @@ systemctl restart incus
 incus list
 ```
 ### ну вот это нужный мне но спорный момент с выдачей высоких привелегий и прочего прям на default профиль
+#### я использую это для многих контейнеров потому что использую в них VPN
 ```sh
 incus profile set default security.privileged=true
 incus profile set default linux.kernel_modules=ifb,wireguard
