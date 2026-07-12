@@ -20,6 +20,17 @@ incus config set core.https_address=:ПОРТ && incus config get core.https_add
 ```sh
 bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/heads/main/gen-cert.sh)
 ```
+#### сертификат добавляеться и удаляеться по fingerprint вот так
+```sh
+incus config trust add-certificate ИМЯ.crt
+```
+```sh
+incus config trust list
+```
+```sh
+incus config trust remove FINGERPRINT
+```
+
 #### перезапустить incus
 ```sh
 systemctl restart incus
@@ -77,17 +88,6 @@ sudo hostnamectl set-hostname НОВОЕ_ИМЯ
 #### но только плюс было бы не плохо так же проверить и отредактировать
 ```sh
 sudo nano /etc/hosts
-```
-
-#### Ну и потому можно добавить в incus этот сертификат, а так же удалить его по fingerprint
-```sh
-incus config trust add-certificate ИМЯ.crt
-```
-```sh
-incus config trust list
-```
-```sh
-incus config trust remove FINGERPRINT
 ```
 
 ### сгенерировать ssh ключ
