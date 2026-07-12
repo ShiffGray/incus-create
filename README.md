@@ -15,10 +15,11 @@ incus admin init
 ```sh
 incus config set core.https_address=:ПОРТ && incus config get core.https_address
 ```
-### сгенерировать и засунуть в incus ssl сертификат
+### сгенерировать и засунуть в incusui ssl сертификат
 ```sh
 bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/heads/main/gen-cert.sh)
 ```
+#### перезапустить incus
 ```sh
 systemctl restart incus
 ```
