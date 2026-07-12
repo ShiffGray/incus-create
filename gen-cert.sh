@@ -39,9 +39,10 @@ parse_flags() {
 
 # ─── Запрос данных ─────────────────────────────────
 ask_name() {
-    while [ -z "$NAME" ]; do
-        read -r -p "$MSG_ASK_NAME $HOSTNAME): " NAME
-    done
+    read -r -p "$MSG_ASK_NAME $HOSTNAME): " NAME
+    if [ -z "$NAME" ]; then
+        NAME="$HOSTNAME"
+    fi
 }
 
 ask_desc() {
