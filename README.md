@@ -90,9 +90,19 @@ sudo hostnamectl set-hostname НОВОЕ_ИМЯ
 sudo nano /etc/hosts
 ```
 
-### сгенерировать ssh ключ
+### сгенерировать ssh ключ (на Windows)
 ```sh
 ssh-keygen -t ed25519 -b 5120 -f ПУТЬ/ИМЯ -N ПАРОЛЬ_КЛЮЧА -a 480 -q
+```
+#### чтобы добавить ssh ключ на сервер нужно сначала отредактировать ssh конфиг
+#### раскоментировать там PubkeyAuthentication yes
+#### а так же можно сделать PasswordAuthentication no и сменить Port 22
+```sh
+nano /etc/ssh/sshd_config
+```
+#### а потом вставить содерживаое файла.pub в 
+```sh
+nano /root/.ssh/authorized_keys
 ```
 
 ### включить пролистывание в tmux сессиях
