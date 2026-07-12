@@ -20,7 +20,7 @@ incus config set core.https_address=:ПОРТ && incus config get core.https_add
 ```sh
 bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/heads/main/gen-cert.sh)
 ```
-#### сертификат добавляеться и удаляеться по fingerprint вот так
+#### вручную же сертификат добавляеться и удаляеться по fingerprint вот так
 ```sh
 incus config trust add-certificate ИМЯ.crt
 ```
