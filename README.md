@@ -3,7 +3,7 @@
 #### обновление и установка полезностей
 #### я так же исполняю эту команду внутри контейнеров
 ```sh
-apt update -y && apt upgrade -y && apt install curl sudo ufw btop tmux nano ssh -y
+apt update -y && apt upgrade -y && apt install curl sudo ufw btop tmux nano ssh unzip xz-utils -y
 ```
 #### установка и основная конфигурация самого IncusUI
 ```sh
