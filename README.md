@@ -38,3 +38,10 @@ incus profile set default security.protection.delete=true
 ```sh
 incus profile show default
 ```
+
+
+
+### включить пролистывание в tmux сессиях
+```sh
+echo "set -g mouse on" >> ~/.tmux.conf && tmux source-file ~/.tmux.conf
+```
