@@ -35,7 +35,7 @@ parse_flags() {
 # ─── Запрос данных ─────────────────────────────────
 ask_name() {
     if [ -z "$NAME" ]; then
-        read -r -p "$MSG_ASK_NAME $HOSTNAME): " INPUT
+        read -r -p "$(printf "$MSG_ASK_NAME" "$HOSTNAME")" INPUT
         if [ -z "$INPUT" ]; then INPUT="$HOSTNAME"; fi
         NAME="$INPUT"
     fi
@@ -58,7 +58,7 @@ ask_name() {
 }
 ask_passphrase() {
     while true; do
-        read -s -p "$MSG_ASK_PASS $MSG_ENTER_NOPASS): " PASSPHRASE; echo ""
+        read -s -p "$MSG_ASK_PASS" PASSPHRASE; echo ""
         # без пароля — сразу выход
         if [ -z "$PASSPHRASE" ]; then
             return
@@ -105,20 +105,20 @@ install_deps() {
         return
     fi
 
-    log_warning "ssh-keygen not found"
-    read -r -p "Install openssh-client automatically? [Y/n]: " ANSWER
+    log_warning "$MSG_KEYGEN_MISSING"
+    read -r -p "$MSG_ASK_INSTALL_KEYGEN" ANSWER
     if [[ "$ANSWER" =~ ^[Nn]$ ]]; then
-        log_error "Installation aborted"
+        log_error "$MSG_INSTALL_ABORTED"
         exit 1
     fi
 
     apt-get update
     apt-get install -y openssh-client
     if ! command -v ssh-keygen &>/dev/null; then
-        log_error "ssh-keygen still not found after install"
+        log_error "$MSG_KEYGEN_STILL_MISSING"
         exit 1
     fi
-    log_success "ssh-keygen installed"
+    log_success "$MSG_KEYGEN_INSTALLED"
 }
 
 # ─── Генерация ─────────────────────────────────────
@@ -404,16 +404,16 @@ ask_ufw_enable() {
 ask_password_auth() {
     read -r -p "$MSG_ASK_PASSWORD_AUTH" ANSWER
     case "${ANSWER,,}" in
-        y|yes)
+        n|no)
+            log_info "$MSG_PASSWORD_AUTH_KEEP"
+            ;;
+        *)
             if set_sshd_opt "PasswordAuthentication" "no"; then
                 log_info "$MSG_PASSWORD_AUTH_ALREADY"
             else
                 reload_sshd
                 log_success "$MSG_PASSWORD_AUTH_DISABLED"
             fi
-            ;;
-        *)
-            log_info "$MSG_PASSWORD_AUTH_KEEP"
             ;;
     esac
 }
@@ -447,7 +447,7 @@ export_http() {
         break
     done
 
-    log_info "$MSG_EXPORT_HTTP_START $PORT"
+    log_info "$MSG_EXPORT_HTTP_START" "$PORT"
     if [ "$SERVE_ALL" -eq 1 ]; then
         ( cd "$OUTDIR" && exec python3 -m http.server "$PORT" --bind 127.0.0.1 ) &
     else
@@ -462,7 +462,7 @@ export_http() {
     fi
     local PID=$!
     trap 'kill "$PID" 2>/dev/null || true; [ -n "$EXPORT_DIR" ] && rm -rf "$EXPORT_DIR"' INT TERM EXIT
-    log_success "$MSG_EXPORT_HTTP_RUNNING http://localhost:$PORT"
+    log_success "$MSG_EXPORT_HTTP_RUNNING" "http://localhost:$PORT"
     log_info "$MSG_EXPORT_HTTP_TUNNEL" "$PORT" "$PORT"
     echo ""
     read -r -p "$MSG_EXPORT_HTTP_STOP" _
@@ -511,7 +511,7 @@ main() {
             done
             NAME="$candidate"
             GENERATED_NAMES+=("$NAME")
-            gen_key || { log_error "Failed to generate key $i/$COUNT"; exit 1; }
+            gen_key || { log_error "$MSG_GEN_FAIL_N" "$NAME" "$i" "$COUNT"; exit 1; }
         done
         setup_sshd
         ask_ssh_port
@@ -519,9 +519,9 @@ main() {
         ask_password_auth
         export_http
         if [ "$COUNT" -eq 1 ]; then
-            log_success "$MSG_DONE $OUTDIR/$NAME{, .pub}"
+            log_success "$MSG_DONE" "$OUTDIR/$NAME" "$OUTDIR/$NAME.pub"
         else
-            log_success "$MSG_DONE_MULTI $OUTDIR/$BASE_NAME*{, .pub}"
+            log_success "$MSG_DONE_MULTI" "$COUNT" "$OUTDIR" "$BASE_NAME"
         fi
     else
         # только синхронизация: пересобираем authorized_keys из папки ключей
@@ -547,38 +547,44 @@ log_error() { printf "${RED}>>> [SSH]${NC} ❌ $1\n" "${@:2}" >&2; }
 init_lang() {
     if [[ "$LANG" == ru_RU* ]]; then
         HELP_USAGE="ssh-keys -n <имя> [-o <папка>] [-s|--serve]"
-        HELP_FLAGS=" -n <имя> имя файлов (обязательно)\n -s|--serve только экспорт всей папки через HTTP"
+        HELP_FLAGS=" -n <имя>     префикс имени файлов ключей (обязательно)\n -o <папка>   каталог для ключей (по умолчанию: ~/.ssh/keys)\n -s|--serve  только HTTP-экспорт всей папки ключей"
         MSG_UNKNOWN_FLAG="Неизвестный флаг:"
-        MSG_ASK_NAME="Имя файла (напр."
-        MSG_ASK_PASS="Passphrase для ключа (напр."
-        MSG_ASK_PASS_CONFIRM="Подтвердите passphrase (Enter = пропустить): "
-        MSG_PASS_MISMATCH="Passphrase не совпадает, попробуйте ещё раз"
-        MSG_ENTER_NOPASS="Enter = без пароля"
+        MSG_ASK_NAME="Имя файла ключа (Enter = %s): "
+        MSG_ASK_PASS="Парольная фраза для ключа (Enter = без пароля): "
+        MSG_ASK_PASS_CONFIRM="Повторите парольную фразу (Enter = пропустить)"
+        MSG_PASS_MISMATCH="Парольные фразы не совпадают — попробуйте ещё раз"
         MSG_ASK_GENERATE="Сгенерировать ключ? [Y/n] (exit/close/clear = отмена): "
         MSG_GEN_CANCEL="Отменено, ничего не изменено"
-        MSG_GEN_INVALID="Некорректный ответ (y/n/exit/close/clear)"
+        MSG_GEN_INVALID="Некорректный ответ (допустимо: y/n/exit/close/clear)"
         MSG_SYNC_ONLY="Синхронизация без генерации"
         MSG_SYNC_DONE="Синхронизация завершена"
         MSG_GEN_START="Генерация ключа:"
         MSG_GEN_KEY="Приватный ключ:"
         MSG_GEN_PUB="Публичный ключ:"
         MSG_GEN_FAIL="Не удалось сгенерировать ключ %s"
+        MSG_GEN_FAIL_N="Не удалось сгенерировать ключ %s (шаг %s/%s)"
         MSG_ROOT_REQUIRED="Требуются права root (sudo)"
+        MSG_KEYGEN_MISSING="ssh-keygen не найден"
+        MSG_ASK_INSTALL_KEYGEN="Установить openssh-client автоматически? [Y/n]: "
+        MSG_INSTALL_ABORTED="Установка отменена"
+        MSG_KEYGEN_STILL_MISSING="ssh-keygen всё ещё не найден после установки"
+        MSG_KEYGEN_INSTALLED="ssh-keygen установлен"
         MSG_SSHD_SETUP="sshd настроен на чтение authorized_keys"
         MSG_SSHD_ALREADY="sshd уже настроен на чтение authorized_keys"
         MSG_SSHD_RELOAD_FAIL="Не удалось перезагрузить sshd"
-        MSG_ASK_SSH_PORT="Сменить SSH порт (Enter = пропустить, число = сменить): "
+        MSG_SSH_RELOAD_FAIL="Не удалось перезагрузить sshd"
+        MSG_ASK_SSH_PORT="Сменить SSH-порт? (Enter = пропустить, число = сменить): "
         MSG_PORT_INVALID="Некорректный порт (1-65535)"
         MSG_SSH_ALREADY="Порт %s уже активен"
-        MSG_SSH_CONFIG_INVALID="Конфиг sshd невалиден, смена порта отменена"
-        MSG_SSH_CHANGE_WARN="SSH-порт меняется на %s — текущее соединение сохранится, новые подключения на новый порт."
+        MSG_SSH_CONFIG_INVALID="Конфиг sshd невалиден — смена порта отменена"
+        MSG_SSH_CHANGE_WARN="Меняю SSH-порт на %s: текущее соединение сохранится, новые подключения пойдут на новый порт."
         MSG_SSH_CHANGE_FAIL="Не удалось сменить SSH-порт, продолжаю"
         MSG_SSH_CHANGED="SSH-порт изменён на %s"
         MSG_SSH_LISTENING="sshd слушает порт %s"
         MSG_SSH_LISTEN_FAIL="sshd не подтверждён на порту %s"
-        MSG_SSH_PORT_BUSY="Порт %s занят другим сервисом (не sshd) — смена порта отменена, иначе после перезагрузки SSH не поднимется"
-        MSG_ASK_UFW_SSH="Добавить UFW-правило для SSH порта %s? [Y/n]: "
-        MSG_UFW_SSH_SKIP="SSH-правило пропущено"
+        MSG_SSH_PORT_BUSY="Порт %s занят другим сервисом (не sshd) — смена отменена, иначе после перезагрузки SSH не поднимется"
+        MSG_ASK_UFW_SSH="Открыть SSH-порт %s в UFW? [Y/n]: "
+        MSG_UFW_SSH_SKIP="Правило для SSH не добавлено"
         MSG_UFW_SSH_OPEN="SSH-порт %s открыт в UFW"
         MSG_UFW_SSH_FAIL="Не удалось открыть SSH-порт %s в UFW"
         MSG_UFW_SSH_CLOSED="SSH-порт %s закрыт в UFW"
@@ -591,32 +597,31 @@ init_lang() {
         MSG_UFW_INSTALLING="UFW не установлен — устанавливаю..."
         MSG_UFW_INSTALLED="UFW установлен"
         MSG_UFW_INSTALL_FAIL="Не удалось установить UFW"
-        MSG_ASK_PASSWORD_AUTH="Запретить вход по паролю? [y/N]: "
+        MSG_ASK_PASSWORD_AUTH="Запретить вход по паролю? [Y/n]: "
         MSG_PASSWORD_AUTH_DISABLED="Вход по паролю запрещён"
         MSG_PASSWORD_AUTH_ALREADY="Вход по паролю уже запрещён"
         MSG_PASSWORD_AUTH_KEEP="Вход по паролю оставлен"
-        MSG_DONE="Готово:"
-        MSG_DONE_MULTI="Готово. Ключи сохранены в:"
-        MSG_COUNT_INVALID="Количество должно быть >= 1"
-        MSG_EXPORT_HTTP_PORT="Порт для HTTP экспорта (Enter = пропустить): "
+        MSG_DONE="Готово: %s (приватный ключ) и %s (публичный ключ)"
+        MSG_DONE_MULTI="Готово: сгенерировано %s ключей в каталоге %s, имена от %s"
+        MSG_COUNT_INVALID="Количество должно быть не меньше 1"
+        MSG_EXPORT_HTTP_PORT="Порт для HTTP-экспорта (Enter = пропустить): "
         MSG_EXPORT_HTTP_INVALID_PORT="Некорректный порт (1024-65535)"
-        MSG_EXPORT_HTTP_PORT_BUSY="Порт занят, выберите другой"
-        MSG_EXPORT_HTTP_NO_PYTHON="python3 не найден. Установите python3 для экспорта."
-        MSG_EXPORT_HTTP_START="Запуск HTTP сервера на порту"
-        MSG_EXPORT_HTTP_RUNNING="HTTP сервер запущен:"
-        MSG_EXPORT_HTTP_TUNNEL="Для доступа с ПК выполните: ssh -L %s:127.0.0.1:%s user@server -N"
-        MSG_EXPORT_HTTP_STOP="Нажмите Enter для остановки сервера..."
-        MSG_EXPORT_HTTP_STOPPED="HTTP сервер остановлен"
+        MSG_EXPORT_HTTP_PORT_BUSY="Порт занят — выберите другой"
+        MSG_EXPORT_HTTP_NO_PYTHON="python3 не найден — HTTP-экспорт недоступен"
+        MSG_EXPORT_HTTP_START="Запускаю HTTP-сервер на порту %s"
+        MSG_EXPORT_HTTP_RUNNING="HTTP-сервер запущен: %s"
+        MSG_EXPORT_HTTP_TUNNEL="Доступ с компьютера: ssh -L %s:127.0.0.1:%s user@server -N"
+        MSG_EXPORT_HTTP_STOP="Нажмите Enter, чтобы остановить сервер..."
+        MSG_EXPORT_HTTP_STOPPED="HTTP-сервер остановлен"
     else
         HELP_USAGE="ssh-keys -n <name> [-o <dir>] [-s|--serve]"
-        HELP_FLAGS=" -n <name> filename prefix (required)\n -s|--serve serve entire folder via HTTP"
+        HELP_FLAGS=" -n <name>  key filename prefix (required)\n -o <dir>   directory for keys (default: ~/.ssh/keys)\n -s|--serve serve whole keys folder over HTTP only"
         MSG_UNKNOWN_FLAG="Unknown flag:"
-        MSG_ASK_NAME="Filename (e.g."
-        MSG_ASK_PASS="Key passphrase (e.g."
-        MSG_ASK_PASS_CONFIRM="Confirm passphrase (Enter = skip): "
-        MSG_PASS_MISMATCH="Passphrases do not match, try again"
-        MSG_ENTER_NOPASS="Enter = no passphrase"
-        MSG_ASK_GENERATE="Generate key? [Y/n] (exit/close/clear = cancel): "
+        MSG_ASK_NAME="Key filename (Enter = %s): "
+        MSG_ASK_PASS="Key passphrase (Enter = none): "
+        MSG_ASK_PASS_CONFIRM="Confirm passphrase (Enter = skip)"
+        MSG_PASS_MISMATCH="Passphrases do not match — try again"
+        MSG_ASK_GENERATE="Generate keys? [Y/n] (exit/close/clear = cancel): "
         MSG_GEN_CANCEL="Cancelled, nothing changed"
         MSG_GEN_INVALID="Invalid answer (y/n/exit/close/clear)"
         MSG_SYNC_ONLY="Sync only, no generation"
@@ -625,22 +630,29 @@ init_lang() {
         MSG_GEN_KEY="Private key:"
         MSG_GEN_PUB="Public key:"
         MSG_GEN_FAIL="Failed to generate key %s"
-        MSG_ROOT_REQUIRED="Root required (sudo)"
+        MSG_GEN_FAIL_N="Failed to generate key %s (step %s/%s)"
+        MSG_ROOT_REQUIRED="Root privileges required (sudo)"
+        MSG_KEYGEN_MISSING="ssh-keygen not found"
+        MSG_ASK_INSTALL_KEYGEN="Install openssh-client automatically? [Y/n]: "
+        MSG_INSTALL_ABORTED="Installation aborted"
+        MSG_KEYGEN_STILL_MISSING="ssh-keygen still not found after install"
+        MSG_KEYGEN_INSTALLED="ssh-keygen installed"
         MSG_SSHD_SETUP="sshd configured to read authorized_keys"
         MSG_SSHD_ALREADY="sshd already configured to read authorized_keys"
         MSG_SSHD_RELOAD_FAIL="Failed to reload sshd"
-        MSG_ASK_SSH_PORT="Change SSH port (Enter = skip, number = change): "
+        MSG_SSH_RELOAD_FAIL="Failed to reload sshd"
+        MSG_ASK_SSH_PORT="Change SSH port? (Enter = skip, number = change): "
         MSG_PORT_INVALID="Invalid port (1-65535)"
-        MSG_SSH_ALREADY="Port %s already active"
-        MSG_SSH_CONFIG_INVALID="sshd config invalid, port change aborted"
-        MSG_SSH_CHANGE_WARN="SSH port changing to %s — current connection stays, new connections on the new port."
+        MSG_SSH_ALREADY="Port %s is already active"
+        MSG_SSH_CONFIG_INVALID="sshd config invalid — port change aborted"
+        MSG_SSH_CHANGE_WARN="Changing SSH port to %s: current connection stays, new connections go to the new port."
         MSG_SSH_CHANGE_FAIL="Failed to change SSH port, continuing"
         MSG_SSH_CHANGED="SSH port changed to %s"
-        MSG_SSH_LISTENING="sshd listening on port %s"
+        MSG_SSH_LISTENING="sshd is listening on port %s"
         MSG_SSH_LISTEN_FAIL="sshd not confirmed on port %s"
-        MSG_SSH_PORT_BUSY="Port %s is busy by another service (not sshd) — port change aborted, otherwise SSH would not start after reboot"
-        MSG_ASK_UFW_SSH="Add UFW rule for SSH port %s? [Y/n]: "
-        MSG_UFW_SSH_SKIP="SSH rule skipped"
+        MSG_SSH_PORT_BUSY="Port %s is in use by another service (not sshd) — change aborted, otherwise SSH would not start after reboot"
+        MSG_ASK_UFW_SSH="Allow SSH port %s in UFW? [Y/n]: "
+        MSG_UFW_SSH_SKIP="SSH rule not added"
         MSG_UFW_SSH_OPEN="SSH port %s opened in UFW"
         MSG_UFW_SSH_FAIL="Failed to open SSH port %s in UFW"
         MSG_UFW_SSH_CLOSED="SSH port %s closed in UFW"
@@ -649,24 +661,24 @@ init_lang() {
         MSG_UFW_ENABLE_SKIP="UFW not enabled"
         MSG_UFW_ENABLED="UFW enabled"
         MSG_UFW_ENABLE_FAIL="Failed to enable UFW"
-        MSG_UFW_ALREADY_ACTIVE="UFW already active"
+        MSG_UFW_ALREADY_ACTIVE="UFW is already active"
         MSG_UFW_INSTALLING="UFW not installed — installing..."
         MSG_UFW_INSTALLED="UFW installed"
         MSG_UFW_INSTALL_FAIL="Failed to install UFW"
-        MSG_ASK_PASSWORD_AUTH="Disable password login? [y/N]: "
+        MSG_ASK_PASSWORD_AUTH="Disable password login? [Y/n]: "
         MSG_PASSWORD_AUTH_DISABLED="Password login disabled"
         MSG_PASSWORD_AUTH_ALREADY="Password login already disabled"
         MSG_PASSWORD_AUTH_KEEP="Password login kept"
-        MSG_DONE="Done:"
-        MSG_DONE_MULTI="Done. Keys saved in:"
-        MSG_COUNT_INVALID="Count must be >= 1"
+        MSG_DONE="Done: %s (private key) and %s (public key)"
+        MSG_DONE_MULTI="Done: %s keys generated in %s, names starting with %s"
+        MSG_COUNT_INVALID="Count must be at least 1"
         MSG_EXPORT_HTTP_PORT="Port for HTTP export (Enter = skip): "
         MSG_EXPORT_HTTP_INVALID_PORT="Invalid port (1024-65535)"
-        MSG_EXPORT_HTTP_PORT_BUSY="Port is busy, choose another"
-        MSG_EXPORT_HTTP_NO_PYTHON="python3 not found. Install python3 for export."
-        MSG_EXPORT_HTTP_START="Starting HTTP server on port"
-        MSG_EXPORT_HTTP_RUNNING="HTTP server running:"
-        MSG_EXPORT_HTTP_TUNNEL="To access from PC run: ssh -L %s:127.0.0.1:%s user@server -N"
+        MSG_EXPORT_HTTP_PORT_BUSY="Port is in use — pick another"
+        MSG_EXPORT_HTTP_NO_PYTHON="python3 not found — HTTP export unavailable"
+        MSG_EXPORT_HTTP_START="Starting HTTP server on port %s"
+        MSG_EXPORT_HTTP_RUNNING="HTTP server running at: %s"
+        MSG_EXPORT_HTTP_TUNNEL="Access from your PC: ssh -L %s:127.0.0.1:%s user@server -N"
         MSG_EXPORT_HTTP_STOP="Press Enter to stop the server..."
         MSG_EXPORT_HTTP_STOPPED="HTTP server stopped"
     fi
