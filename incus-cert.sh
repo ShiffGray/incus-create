@@ -23,12 +23,12 @@ GENERATE="yes" # yes = генерировать, no = только синхро�
 parse_flags() {
     while [[ $# -gt 0 ]]; do
         case $1 in
-            -n) if [ $# -lt 2 ]; then log_error "$MSG_UNKNOWN_FLAG -n"; exit 1; fi; NAME="$2"; shift 2 ;;
+            -n) if [ $# -lt 2 ]; then log_error "$MSG_UNKNOWN_FLAG" "-n"; exit 1; fi; NAME="$2"; shift 2 ;;
             -d) DAYS="$2"; DAYS_SET=1; shift 2 ;;
             -o) OUTDIR="$2"; shift 2 ;;
             --serve|-s) SERVE_ALL=1; shift ;;
             --help|-h) echo "$HELP_USAGE"; echo "$HELP_FLAGS"; exit 0 ;;
-            *) log_error "$MSG_UNKNOWN_FLAG $1"; exit 1 ;;
+            *) log_error "$MSG_UNKNOWN_FLAG" "$1"; exit 1 ;;
         esac
     done
 }
@@ -36,7 +36,7 @@ parse_flags() {
 # ─── Запрос данных ─────────────────────────────────
 ask_name() {
     if [ -z "$NAME" ]; then
-        read -r -p "$MSG_ASK_NAME $HOSTNAME): " INPUT
+        read -r -p "$(printf "$MSG_ASK_NAME" "$HOSTNAME")" INPUT
         if [ -z "$INPUT" ]; then INPUT="$HOSTNAME"; fi
         NAME="$INPUT"
     fi
@@ -58,18 +58,18 @@ ask_name() {
     BASE_NAME="$NAME"
 }
 ask_desc() {
-    read -r -p "$MSG_ASK_DESC ${HOSTNAME}_home, $MSG_ENTER_EQ_NAME): " DESC
+    read -r -p "$(printf "$MSG_ASK_DESC" "${HOSTNAME}_home")" DESC
     if [ -z "$DESC" ]; then DESC="$NAME"; fi
 }
 ask_password() {
     while true; do
-        read -s -p "$MSG_ASK_PASS 123456, $MSG_ENTER_NOPASS): " PASS; echo ""
+        read -s -p "$MSG_ASK_PASS" PASS; echo ""
         # без пароля — сразу выход
         if [ -z "$PASS" ]; then
             return
         fi
         local PASS2=""
-        read -s -p "$MSG_ASK_PASS_CONFIRM: " PASS2; echo ""
+        read -s -p "$MSG_ASK_PASS_CONFIRM" PASS2; echo ""
         # пропуск подтверждения — принимаем введённый пароль
         if [ -z "$PASS2" ]; then
             return
@@ -85,12 +85,12 @@ ask_days() {
     if [ "$DAYS_SET" -eq 1 ]; then
         return
     fi
-    read -r -p "$MSG_ASK_DAYS ${MSG_ASK_DAYS_MAX}): " DAYS_INPUT
+    read -r -p "$MSG_ASK_DAYS" DAYS_INPUT
     if [ -n "$DAYS_INPUT" ]; then
         DAYS="$DAYS_INPUT"
     else
         detect_max_days
-        log_info "Auto-selected max supported days: $DAYS"
+        log_info "$MSG_DAYS_AUTO" "$DAYS"
     fi
 }
 ask_cleanup() {
@@ -129,20 +129,20 @@ install_deps() {
         return
     fi
 
-    log_warning "openssl not found"
-    read -r -p "Install openssl automatically? [Y/n]: " ANSWER
+    log_warning "$MSG_OPENSSL_MISSING"
+    read -r -p "$MSG_ASK_INSTALL_OPENSSL" ANSWER
     if [[ "$ANSWER" =~ ^[Nn]$ ]]; then
-        log_error "Installation aborted"
+        log_error "$MSG_INSTALL_ABORTED"
         exit 1
     fi
 
     apt-get update
     apt-get install -y openssl
     if ! command -v openssl &>/dev/null; then
-        log_error "openssl still not found after install"
+        log_error "$MSG_OPENSSL_STILL_MISSING"
         exit 1
     fi
-    log_success "openssl installed"
+    log_success "$MSG_OPENSSL_INSTALLED"
 }
 
 detect_max_days() {
@@ -166,7 +166,7 @@ detect_max_days() {
 
 # ─── Генерация ─────────────────────────────────────
 gen_cert() {
-    log_info "$MSG_GEN_START $NAME"
+    log_info "$MSG_GEN_START" "$NAME"
     mkdir -p "$OUTDIR"
     local KEY="$OUTDIR/$NAME.key"
     local CSR="$OUTDIR/$NAME.csr"
@@ -178,23 +178,23 @@ gen_cert() {
         log_error "$MSG_GEN_FAIL_KEY" "$NAME"
         return 1
     fi
-    log_success "$MSG_GEN_KEY $KEY"
+    log_success "$MSG_GEN_KEY" "$KEY"
     if ! openssl req -new -key "$KEY" -out "$CSR" -subj "$SUBJ"; then
         log_error "$MSG_GEN_FAIL_CSR" "$NAME"
         return 1
     fi
-    log_success "CSR: $CSR"
+    log_success "$MSG_GEN_CSR" "$CSR"
     if ! openssl x509 -req -in "$CSR" -signkey "$KEY" -out "$CRT" -days "$DAYS" -sha256; then
         log_error "$MSG_GEN_FAIL_CRT" "$NAME"
         return 1
     fi
-    log_success "$MSG_GEN_CRT $CRT ($DAYS ${MSG_DAYS,,})"
+    log_success "$MSG_GEN_CRT" "$CRT" "$DAYS"
     if ! openssl pkcs12 -export -out "$PFX" -inkey "$KEY" -in "$CRT" -passout pass:"$PASS"; then
         log_error "$MSG_GEN_FAIL_PFX" "$NAME"
         return 1
     fi
     rm -f "$CSR"
-    log_success "PFX: $PFX"
+    log_success "$MSG_GEN_PFX" "$PFX"
     chmod 600 "$KEY" "$CRT" "$PFX"
 }
 
@@ -257,7 +257,7 @@ cleanup_incus_trust() {
     while read -r name FP; do
         [ -z "$FP" ] && continue
         if [ -z "${LOCAL_FPS[$FP]+x}" ]; then
-            log_warning "$MSG_TRUST_REMOVE $FP"
+            log_warning "$MSG_TRUST_REMOVE" "$FP"
             incus config trust remove "$FP" 2>/dev/null || true
             # сертификата нет в папке (.crt отсутствует): удаляем оставшиеся файлы, если есть.
             # .crt с этим именем тоже должен отсутствовать, иначе это файлы другого (нового) сертификата
@@ -289,7 +289,7 @@ sync_incus_trust() {
         if [ -z "${TRUST_FPS[$FP]+x}" ]; then
             # новый сертификат: удаляем из панели старый с тем же именем файла, если есть
             remove_trust_by_name "$(basename "$CRT")"
-            log_info "$MSG_TRUST_ADD $CRT"
+            log_info "$MSG_TRUST_ADD" "$CRT"
             incus config trust add-certificate "$CRT" 2>/dev/null || true
         fi
     done
@@ -324,7 +324,7 @@ export_http() {
         break
     done
 
-    log_info "$MSG_EXPORT_HTTP_START $PORT"
+    log_info "$MSG_EXPORT_HTTP_START" "$PORT"
     if [ "$SERVE_ALL" -eq 1 ]; then
         ( cd "$OUTDIR" && exec python3 -m http.server "$PORT" --bind 127.0.0.1 ) &
     else
@@ -341,7 +341,7 @@ export_http() {
     fi
     local PID=$!
     trap 'kill "$PID" 2>/dev/null || true; [ -n "$EXPORT_DIR" ] && rm -rf "$EXPORT_DIR"' INT TERM EXIT
-    log_success "$MSG_EXPORT_HTTP_RUNNING http://localhost:$PORT"
+    log_success "$MSG_EXPORT_HTTP_RUNNING" "http://localhost:$PORT"
     log_info "$MSG_EXPORT_HTTP_TUNNEL" "$PORT" "$PORT"
     echo ""
     read -r -p "$MSG_EXPORT_HTTP_STOP" _
@@ -393,14 +393,14 @@ main() {
             done
             NAME="$candidate"
             GENERATED_NAMES+=("$NAME")
-            gen_cert || { log_error "Failed to generate cert $i/$COUNT"; exit 1; }
+            gen_cert || { log_error "$MSG_GEN_FAIL_N" "$NAME" "$i" "$COUNT"; exit 1; }
         done
         sync_incus_trust
         export_http
         if [ "$COUNT" -eq 1 ]; then
-            log_success "$MSG_DONE $OUTDIR/$NAME.{key,crt,pfx}"
+            log_success "$MSG_DONE" "$OUTDIR/$NAME.key" "$OUTDIR/$NAME.crt" "$OUTDIR/$NAME.pfx"
         else
-            log_success "$MSG_DONE_MULTI $OUTDIR/$BASE_NAME*.{key,crt,pfx}"
+            log_success "$MSG_DONE_MULTI" "$COUNT" "$OUTDIR" "$BASE_NAME"
         fi
     else
         # только синхронизация: добавляем/удаляем сертификаты по папке
@@ -427,90 +427,100 @@ log_error() { printf "${RED}>>> [CERT]${NC} ❌ $1\n" "${@:2}" >&2; }
 init_lang() {
     if [[ "$LANG" == ru_RU* ]]; then
         HELP_USAGE="incus-cert -n <имя> [-d <дни>] [-o <папка>] [-s|--serve]"
-        HELP_FLAGS=" -n <имя> имя файлов (обязательно)\n -s|--serve только экспорт всей папки через HTTP"
-        MSG_UNKNOWN_FLAG="Неизвестный флаг:"
-        MSG_ASK_NAME="Имя файла (напр."
-        MSG_ASK_DESC="Описание (напр."
-        MSG_ASK_PASS="Пароль для PFX (напр."
+        HELP_FLAGS=" -n <имя>     префикс имени файлов сертификата (обязательно)\n -d <дни>    срок действия в днях (по умолчанию: авто-максимум)\n -o <папка>  каталог для сертификатов (по умолчанию: ~/.ssh/incus-certs)\n -s|--serve  только HTTP-экспорт всей папки"
+        MSG_UNKNOWN_FLAG="Неизвестный флаг: %s"
+        MSG_ASK_NAME="Имя файла сертификата (Enter = %s): "
+        MSG_ASK_DESC="Описание/CN (Enter = %s): "
+        MSG_ASK_PASS="Пароль для PFX (Enter = без пароля): "
         MSG_ASK_PASS_CONFIRM="Подтвердите пароль (Enter = пропустить): "
-        MSG_PASS_MISMATCH="Пароли не совпадают, попробуйте ещё раз"
-        MSG_ASK_DAYS="Срок в днях (Enter ="
-        MSG_ASK_DAYS_MAX="максимум"
+        MSG_PASS_MISMATCH="Пароли не совпадают — попробуйте ещё раз"
+        MSG_ASK_DAYS="Срок действия в днях (Enter = подобрать максимум): "
         MSG_ASK_CLEANUP="Зачистить из панели сертификаты, которых нет в папке? [Y/n]: "
         MSG_ASK_GENERATE="Сгенерировать сертификат? [Y/n] (exit/close/clear = отмена): "
         MSG_GEN_CANCEL="Отменено, ничего не изменено"
-        MSG_GEN_INVALID="Некорректный ответ (y/n/exit/close/clear)"
+        MSG_GEN_INVALID="Некорректный ответ (допустимо: y/n/exit/close/clear)"
         MSG_SYNC_ONLY="Синхронизация без генерации"
         MSG_SYNC_DONE="Синхронизация завершена"
         MSG_DAYS_INVALID="Некорректный срок в днях"
-        MSG_ENTER_EQ_NAME="Enter = как имя"
-        MSG_ENTER_NOPASS="Enter = без пароля"
-        MSG_GEN_START="Генерация сертификата:"
-        MSG_GEN_KEY="Ключ:"
-        MSG_GEN_CRT="Сертификат:"
+        MSG_GEN_START="Генерация сертификата: %s"
+        MSG_GEN_KEY="Ключ: %s"
+        MSG_GEN_CSR="CSR: %s"
+        MSG_GEN_CRT="Сертификат: %s (срок %s дней)"
+        MSG_GEN_PFX="PFX: %s"
         MSG_GEN_FAIL_KEY="Не удалось сгенерировать ключ для %s"
         MSG_GEN_FAIL_CSR="Не удалось создать CSR для %s"
         MSG_GEN_FAIL_CRT="Не удалось подписать сертификат для %s"
         MSG_GEN_FAIL_PFX="Не удалось создать PFX для %s"
-        MSG_DAYS="дней"
-        MSG_TRUST_REMOVE="Удаление старого сертификата из trust store:"
-        MSG_TRUST_ADD="Добавление сертификата в trust store:"
+        MSG_GEN_FAIL_N="Не удалось сгенерировать сертификат %s (шаг %s/%s)"
+        MSG_DAYS_AUTO="Автоматически подобран максимальный срок: %s дней"
+        MSG_OPENSSL_MISSING="openssl не найден"
+        MSG_ASK_INSTALL_OPENSSL="Установить openssl автоматически? [Y/n]: "
+        MSG_INSTALL_ABORTED="Установка отменена"
+        MSG_OPENSSL_STILL_MISSING="openssl всё ещё не найден после установки"
+        MSG_OPENSSL_INSTALLED="openssl установлен"
+        MSG_TRUST_REMOVE="Удаление сертификата из trust store: %s"
+        MSG_TRUST_ADD="Добавление сертификата в trust store: %s"
         MSG_TRUST_REMOVE_SAME="Удаление из панели сертификата с тем же именем: %s"
         MSG_TRUST_REMOVE_FILES="Удаление файлов сертификата из папки: %s"
-        MSG_DONE="Готово:"
-        MSG_DONE_MULTI="Готово. Сертификаты сохранены в:"
-        MSG_COUNT_INVALID="Количество должно быть >= 1"
-        MSG_EXPORT_HTTP_PORT="Порт для HTTP экспорта (Enter = пропустить): "
+        MSG_DONE="Готово: %s (ключ), %s (сертификат), %s (PFX)"
+        MSG_DONE_MULTI="Готово: %s сертификатов в каталоге %s, имена от %s"
+        MSG_COUNT_INVALID="Количество должно быть не меньше 1"
+        MSG_EXPORT_HTTP_PORT="Порт для HTTP-экспорта (Enter = пропустить): "
         MSG_EXPORT_HTTP_INVALID_PORT="Некорректный порт (1024-65535)"
-        MSG_EXPORT_HTTP_PORT_BUSY="Порт занят, выберите другой"
-        MSG_EXPORT_HTTP_NO_PYTHON="python3 не найден. Установите python3 для экспорта."
-        MSG_EXPORT_HTTP_START="Запуск HTTP сервера на порту"
-        MSG_EXPORT_HTTP_RUNNING="HTTP сервер запущен:"
-        MSG_EXPORT_HTTP_TUNNEL="Для доступа с ПК выполните: ssh -L %s:127.0.0.1:%s user@server -N"
-        MSG_EXPORT_HTTP_STOP="Нажмите Enter для остановки сервера..."
-        MSG_EXPORT_HTTP_STOPPED="HTTP сервер остановлен"
+        MSG_EXPORT_HTTP_PORT_BUSY="Порт занят — выберите другой"
+        MSG_EXPORT_HTTP_NO_PYTHON="python3 не найден — HTTP-экспорт недоступен"
+        MSG_EXPORT_HTTP_START="Запускаю HTTP-сервер на порту %s"
+        MSG_EXPORT_HTTP_RUNNING="HTTP-сервер запущен: %s"
+        MSG_EXPORT_HTTP_TUNNEL="Доступ с компьютера: ssh -L %s:127.0.0.1:%s user@server -N"
+        MSG_EXPORT_HTTP_STOP="Нажмите Enter, чтобы остановить сервер..."
+        MSG_EXPORT_HTTP_STOPPED="HTTP-сервер остановлен"
     else
         HELP_USAGE="incus-cert -n <name> [-d <days>] [-o <dir>] [-s|--serve]"
-        HELP_FLAGS=" -n <name> filename prefix (required)\n -s|--serve serve entire folder via HTTP"
-        MSG_UNKNOWN_FLAG="Unknown flag:"
-        MSG_ASK_NAME="Filename (e.g."
-        MSG_ASK_DESC="Description (e.g."
-        MSG_ASK_PASS="PFX password (e.g."
+        HELP_FLAGS=" -n <name>  certificate filename prefix (required)\n -d <days>  validity in days (default: auto-max)\n -o <dir>   directory for certificates (default: ~/.ssh/incus-certs)\n -s|--serve serve whole folder over HTTP only"
+        MSG_UNKNOWN_FLAG="Unknown flag: %s"
+        MSG_ASK_NAME="Certificate filename (Enter = %s): "
+        MSG_ASK_DESC="Description/CN (Enter = %s): "
+        MSG_ASK_PASS="PFX password (Enter = none): "
         MSG_ASK_PASS_CONFIRM="Confirm password (Enter = skip): "
-        MSG_PASS_MISMATCH="Passwords do not match, try again"
-        MSG_ASK_DAYS="Days (Enter ="
-        MSG_ASK_DAYS_MAX="max"
-        MSG_ASK_CLEANUP="Clean from panel certs not in folder? [Y/n]: "
+        MSG_PASS_MISMATCH="Passwords do not match — try again"
+        MSG_ASK_DAYS="Validity in days (Enter = auto-pick max): "
+        MSG_ASK_CLEANUP="Clean from panel certs not present in folder? [Y/n]: "
         MSG_ASK_GENERATE="Generate certificate? [Y/n] (exit/close/clear = cancel): "
         MSG_GEN_CANCEL="Cancelled, nothing changed"
         MSG_GEN_INVALID="Invalid answer (y/n/exit/close/clear)"
         MSG_SYNC_ONLY="Sync only, no generation"
         MSG_SYNC_DONE="Sync complete"
         MSG_DAYS_INVALID="Invalid days value"
-        MSG_ENTER_EQ_NAME="Enter = same as name"
-        MSG_ENTER_NOPASS="Enter = no password"
-        MSG_GEN_START="Generating certificate:"
-        MSG_GEN_KEY="Key:"
-        MSG_GEN_CRT="Certificate:"
+        MSG_GEN_START="Generating certificate: %s"
+        MSG_GEN_KEY="Key: %s"
+        MSG_GEN_CSR="CSR: %s"
+        MSG_GEN_CRT="Certificate: %s (%s days)"
+        MSG_GEN_PFX="PFX: %s"
         MSG_GEN_FAIL_KEY="Failed to generate key for %s"
         MSG_GEN_FAIL_CSR="Failed to create CSR for %s"
         MSG_GEN_FAIL_CRT="Failed to sign certificate for %s"
         MSG_GEN_FAIL_PFX="Failed to create PFX for %s"
-        MSG_DAYS="days"
-        MSG_TRUST_REMOVE="Removing old certificate from trust store:"
-        MSG_TRUST_ADD="Adding certificate to trust store:"
+        MSG_GEN_FAIL_N="Failed to generate certificate %s (step %s/%s)"
+        MSG_DAYS_AUTO="Auto-selected max supported days: %s"
+        MSG_OPENSSL_MISSING="openssl not found"
+        MSG_ASK_INSTALL_OPENSSL="Install openssl automatically? [Y/n]: "
+        MSG_INSTALL_ABORTED="Installation aborted"
+        MSG_OPENSSL_STILL_MISSING="openssl still not found after install"
+        MSG_OPENSSL_INSTALLED="openssl installed"
+        MSG_TRUST_REMOVE="Removing certificate from trust store: %s"
+        MSG_TRUST_ADD="Adding certificate to trust store: %s"
         MSG_TRUST_REMOVE_SAME="Removing same-name cert from panel: %s"
         MSG_TRUST_REMOVE_FILES="Removing cert files from folder: %s"
-        MSG_DONE="Done:"
-        MSG_DONE_MULTI="Done. Certificates saved in:"
-        MSG_COUNT_INVALID="Count must be >= 1"
+        MSG_DONE="Done: %s (key), %s (certificate), %s (PFX)"
+        MSG_DONE_MULTI="Done: %s certificates in %s, names starting with %s"
+        MSG_COUNT_INVALID="Count must be at least 1"
         MSG_EXPORT_HTTP_PORT="Port for HTTP export (Enter = skip): "
         MSG_EXPORT_HTTP_INVALID_PORT="Invalid port (1024-65535)"
-        MSG_EXPORT_HTTP_PORT_BUSY="Port is busy, choose another"
-        MSG_EXPORT_HTTP_NO_PYTHON="python3 not found. Install python3 for export."
-        MSG_EXPORT_HTTP_START="Starting HTTP server on port"
-        MSG_EXPORT_HTTP_RUNNING="HTTP server running:"
-        MSG_EXPORT_HTTP_TUNNEL="To access from PC run: ssh -L %s:127.0.0.1:%s user@server -N"
+        MSG_EXPORT_HTTP_PORT_BUSY="Port is in use — pick another"
+        MSG_EXPORT_HTTP_NO_PYTHON="python3 not found — HTTP export unavailable"
+        MSG_EXPORT_HTTP_START="Starting HTTP server on port %s"
+        MSG_EXPORT_HTTP_RUNNING="HTTP server running at: %s"
+        MSG_EXPORT_HTTP_TUNNEL="Access from your PC: ssh -L %s:127.0.0.1:%s user@server -N"
         MSG_EXPORT_HTTP_STOP="Press Enter to stop the server..."
         MSG_EXPORT_HTTP_STOPPED="HTTP server stopped"
     fi
