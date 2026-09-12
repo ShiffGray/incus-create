@@ -19,6 +19,14 @@ bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/h
 ```sh
 incus admin init
 ```
+#### генерация и настройка сертификата для IncusUI
+```sh
+bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/heads/main/incus-cert.sh)
+```
+#### настройка файрвола для IncusUI
+```sh
+bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/heads/main/incus-firewall.sh)
+```
 #### можно поменять или в принципе указать порт на котором будет работать веб
 ```sh
 incus config set core.https_address=:ПОРТ && incus config get core.https_address
