@@ -6,12 +6,6 @@
 
 set -e
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
-log_info()    { echo -e "${GREEN}>>> [Incus]${NC} $1" >&2; }
-log_success() { echo -e "${GREEN}>>> [Incus]${NC} ✅ $1" >&2; }
-log_warning() { echo -e "${YELLOW}>>> [Incus]${NC} ⚠️  $1" >&2; }
-log_error()   { echo -e "${RED}>>> [Incus]${NC} ❌ $1" >&2; }
-
 export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
 
@@ -167,9 +161,14 @@ main() {
     verify; print_info
 }
 
-# ══════════════════════════════════════════════════════
+# ─── Оформление вывода ─────────────────────────────
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
+log_info()    { echo -e "${GREEN}>>> [Incus]${NC} $1" >&2; }
+log_success() { echo -e "${GREEN}>>> [Incus]${NC} ✅ $1" >&2; }
+log_warning() { echo -e "${YELLOW}>>> [Incus]${NC} ⚠️  $1" >&2; }
+log_error()   { echo -e "${RED}>>> [Incus]${NC} ❌ $1" >&2; }
+
 # ─── Локализация ─────────────────────────────────────
-# ══════════════════════════════════════════════════════
 init_lang() {
     if [[ "$LANG" == ru_RU* ]]; then
         HELP_USAGE="Использование: $0"
