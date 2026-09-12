@@ -405,7 +405,8 @@ current_panel_port() {
     echo "${addr##*:}"
 }
 
-# Промпт: Enter = пропуск, no = закрыть панель, число = задать порт + открыть в UFW
+# Промпт: Enter = пропуск, yes = порт по умолчанию, no = закрыть панель.
+# После задания порта — отдельный вопрос: открывать ли его наружу (по умолчанию да).
 ask_panel() {
     read -r -p "$MSG_ASK_PANEL" PANEL_INPUT
     local cur
@@ -439,7 +440,16 @@ ask_panel() {
             else
                 log_warning "$MSG_PANEL_SET_FAIL"
             fi
-            run_cmd ufw allow in proto tcp to any port "$PANEL_INPUT"
+            # отдельный вопрос: открывать ли порт наружу (по умолчанию — да)
+            read -r -p "$(printf "$MSG_ASK_PANEL_OPEN" "$PANEL_INPUT")" OPEN_ANSWER
+            case "${OPEN_ANSWER,,}" in
+                n|no)
+                    log_info "$MSG_PANEL_LOCAL" "$PANEL_INPUT"
+                    ;;
+                *)
+                    run_cmd ufw allow in proto tcp to any port "$PANEL_INPUT"
+                    ;;
+            esac
             ;;
     esac
 }
@@ -502,8 +512,10 @@ init_lang() {
         MSG_ASK_SSH="Добавить UFW-правило для SSH порта %s? [Y/n]: "
         MSG_SSH_SKIP="SSH-правило пропущено"
         MSG_ASK_PANEL="Порт панели IncusUI (Enter = пропустить, yes = по умолчанию ${DEFAULT_PANEL_PORT}, no = закрыть): "
+        MSG_ASK_PANEL_OPEN="Открыть порт панели %s наружу в UFW? [Y/n]: "
         MSG_PANEL_INVALID="Некорректный порт (1-65535)"
         MSG_PANEL_SET="Порт панели задан: %s"
+        MSG_PANEL_LOCAL="Порт панели %s задан, наружу не открыт (доступ через SSH-туннель)"
         MSG_PANEL_CLOSED="Порт панели закрыт"
         MSG_PANEL_SET_FAIL="Не удалось задать порт панели"
         MSG_APPLY="Применение правил UFW для интерфейса %s"
@@ -528,8 +540,10 @@ init_lang() {
         MSG_ASK_SSH="Add UFW rule for SSH port %s? [Y/n]: "
         MSG_SSH_SKIP="SSH rule skipped"
         MSG_ASK_PANEL="IncusUI panel port (Enter = skip, yes = default ${DEFAULT_PANEL_PORT}, no = close): "
+        MSG_ASK_PANEL_OPEN="Open panel port %s to the outside in UFW? [Y/n]: "
         MSG_PANEL_INVALID="Invalid port (1-65535)"
         MSG_PANEL_SET="Panel port set: %s"
+        MSG_PANEL_LOCAL="Panel port %s set, not exposed (use SSH tunnel)"
         MSG_PANEL_CLOSED="Panel port closed"
         MSG_PANEL_SET_FAIL="Failed to set panel port"
         MSG_APPLY="Applying UFW rules for interface %s"
