@@ -1,9 +1,12 @@
 # incus-create
 ### это устанока и первая настройка
 #### обновление и установка полезностей
-#### я так же исполняю эту команду внутри контейнеров
 ```sh
 apt update -y && apt upgrade -y && apt install curl sudo ufw btop tmux nano ssh unzip xz-utils -y
+```
+#### генерация и настройка ssh ключа а так же смена порта
+```sh
+bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/heads/main/ssh-keys.sh)
 ```
 #### установка и основная конфигурация самого IncusUI
 ```sh
