@@ -405,20 +405,19 @@ current_panel_port() {
     echo "${addr##*:}"
 }
 
-# Промпт: Enter = пропуск, yes = порт по умолчанию, no = закрыть панель.
-# После задания порта — отдельный вопрос: открывать ли его наружу (по умолчанию да).
+# Промпт: Enter = оставить текущий порт, yes = порт по умолчанию, no = закрыть панель.
+# После задания порта — отдельный вопрос: открывать ли его наружу (по умолчанию да;
+# no — порт не открывается, существующее правило закрывается).
 ask_panel() {
-    read -r -p "$MSG_ASK_PANEL" PANEL_INPUT
     local cur
-    case "${PANEL_INPUT,,}" in
-        y|yes) PANEL_INPUT="$DEFAULT_PANEL_PORT" ;;
-    esac
+    cur=$(current_panel_port) || true
+    read -r -p "$(printf "$MSG_ASK_PANEL" "${cur:-—}" "$DEFAULT_PANEL_PORT")" PANEL_INPUT
     case "${PANEL_INPUT,,}" in
         "")
-            # пропуск — ничего не меняем
+            # пропуск — оставляем текущее состояние как есть
             ;;
         n|no)
-            cur=$(current_panel_port) || true
+            # закрыть панель: снять адрес + удалить её UFW-правило
             if [ -n "$cur" ]; then
                 delete_ufw_port "$cur"
             fi
@@ -426,12 +425,14 @@ ask_panel() {
             log_success "$MSG_PANEL_CLOSED"
             ;;
         *)
+            case "${PANEL_INPUT,,}" in
+                y|yes) PANEL_INPUT="$DEFAULT_PANEL_PORT" ;;
+            esac
             if ! [[ "$PANEL_INPUT" =~ ^[0-9]+$ ]] || [ "$PANEL_INPUT" -lt 1 ] || [ "$PANEL_INPUT" -gt 65535 ]; then
                 log_error "$MSG_PANEL_INVALID"
                 return 1
             fi
             # при смене порта убираем старое правило, чтобы не оставлять открытый порт
-            cur=$(current_panel_port) || true
             if [ -n "$cur" ] && [ "$cur" != "$PANEL_INPUT" ]; then
                 delete_ufw_port "$cur"
             fi
@@ -444,6 +445,8 @@ ask_panel() {
             read -r -p "$(printf "$MSG_ASK_PANEL_OPEN" "$PANEL_INPUT")" OPEN_ANSWER
             case "${OPEN_ANSWER,,}" in
                 n|no)
+                    # не открывать: сносим правило, если порт был открыт ранее
+                    delete_ufw_port "$PANEL_INPUT"
                     log_info "$MSG_PANEL_LOCAL" "$PANEL_INPUT"
                     ;;
                 *)
@@ -511,7 +514,7 @@ init_lang() {
         MSG_SSH_PORT="SSH порт: %s"
         MSG_ASK_SSH="Добавить UFW-правило для SSH порта %s? [Y/n]: "
         MSG_SSH_SKIP="SSH-правило пропущено"
-        MSG_ASK_PANEL="Порт панели IncusUI (Enter = пропустить, yes = по умолчанию ${DEFAULT_PANEL_PORT}, no = закрыть): "
+        MSG_ASK_PANEL="Порт панели IncusUI (текущий: %s; Enter = оставить, yes = %s, число = сменить, no = закрыть): "
         MSG_ASK_PANEL_OPEN="Открыть порт панели %s наружу в UFW? [Y/n]: "
         MSG_PANEL_INVALID="Некорректный порт (1-65535)"
         MSG_PANEL_SET="Порт панели задан: %s"
@@ -539,7 +542,7 @@ init_lang() {
         MSG_SSH_PORT="SSH port: %s"
         MSG_ASK_SSH="Add UFW rule for SSH port %s? [Y/n]: "
         MSG_SSH_SKIP="SSH rule skipped"
-        MSG_ASK_PANEL="IncusUI panel port (Enter = skip, yes = default ${DEFAULT_PANEL_PORT}, no = close): "
+        MSG_ASK_PANEL="IncusUI panel port (current: %s; Enter = keep, yes = %s, number = change, no = close): "
         MSG_ASK_PANEL_OPEN="Open panel port %s to the outside in UFW? [Y/n]: "
         MSG_PANEL_INVALID="Invalid port (1-65535)"
         MSG_PANEL_SET="Panel port set: %s"
