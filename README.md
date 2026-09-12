@@ -4,6 +4,10 @@
 ```sh
 apt update -y && apt upgrade -y && apt install curl sudo ufw btop tmux nano ssh unzip xz-utils -y
 ```
+#### можно поставить русский язык
+```sh
+echo 'ru_RU.UTF-8 UTF-8' >> /etc/locale.gen && locale-gen && update-locale LANG=ru_RU.UTF-8
+```
 #### генерация и настройка ssh ключа а так же смена порта
 ```sh
 bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/heads/main/ssh-keys.sh)
