@@ -27,3 +27,14 @@ bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/h
 ```sh
 bash <(curl -sSL https://raw.githubusercontent.com/ShiffGray/incus-create/refs/heads/main/incus-firewall.sh)
 ```
+### ну вот это нужный мне но спорный момент с выдачей высоких привелегий и прочего прям на default профиль
+#### я использую это потому что у меня во многих контейнерах крутиться VPN
+```sh
+incus profile set default security.privileged=true
+incus profile set default linux.kernel_modules=ifb,wireguard
+incus profile set default boot.autostart=true
+incus profile set default security.protection.delete=true
+```
+```sh
+incus profile show default
+```
