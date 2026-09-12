@@ -181,20 +181,20 @@ install_deps() {
 
 # ─── Настройка br_netfilter и DHCP ──────────────────
 setup_kernel() {
-    log_info "Настройка br_netfilter..."
+    log_info "$MSG_BRNF_SETUP"
 
     # Загружаем модуль
     if ! lsmod | grep -q "^br_netfilter"; then
-        modprobe br_netfilter 2>/dev/null || log_warning "modprobe br_netfilter failed"
+        modprobe br_netfilter 2>/dev/null || log_warning "$MSG_BRNF_MODPROBE_FAIL"
     fi
 
     # Автозагрузка при загрузке
     if ! grep -q "^br_netfilter$" /etc/modules-load.d/br_netfilter.conf 2>/dev/null; then
         mkdir -p /etc/modules-load.d
         echo "br_netfilter" | tee /etc/modules-load.d/br_netfilter.conf >/dev/null
-        log_success "br_netfilter добавлен в автозагрузку"
+        log_success "$MSG_BRNF_AUTOLOAD_ADDED"
     else
-        log_success "br_netfilter уже в автозагрузке"
+        log_success "$MSG_BRNF_AUTOLOAD_EXISTS"
     fi
 
     # Включаем bridge netfilter
@@ -204,24 +204,24 @@ setup_kernel() {
 
 setup_dhcp() {
     if [ "$DHCP_ENABLE" != "yes" ]; then
-        log_info "DHCP отключен по запросу"
+        log_info "$MSG_DHCP_DISABLED"
         return
     fi
 
-    log_info "Включение DHCP на мосте $IFACE..."
+    log_info "$MSG_DHCP_ENABLING" "$IFACE"
 
     # IPv4 DHCP
     if incus network set "$IFACE" ipv4.dhcp=true 2>&1; then
-        log_success "IPv4 DHCP включен"
+        log_success "$MSG_DHCP_V4_ON"
     else
-        log_warning "Не удалось включить IPv4 DHCP"
+        log_warning "$MSG_DHCP_V4_FAIL"
     fi
 
     # IPv6 DHCP (stateful)
     if incus network set "$IFACE" ipv6.dhcp.stateful=true 2>&1; then
-        log_success "IPv6 DHCP (stateful) включен"
+        log_success "$MSG_DHCP_V6_ON"
     else
-        log_warning "Не удалось включить IPv6 DHCP (возможно не поддерживается)"
+        log_warning "$MSG_DHCP_V6_FAIL"
     fi
 }
 
@@ -229,9 +229,9 @@ setup_dhcp() {
 run_cmd() {
     log_info "$MSG_RULE" "$*"
     if "$@" 2>&1; then
-        log_success "OK"
+        log_success "$MSG_OK"
     else
-        log_warning "Command failed: $*"
+        log_warning "$MSG_CMD_FAIL" "$*"
     fi
 }
 
@@ -468,7 +468,7 @@ main() {
     echo ""
 
     if [ "$EUID" -ne 0 ]; then
-        log_error "Root required (sudo)"
+        log_error "$MSG_ROOT_REQUIRED"
         exit 1
     fi
 
@@ -523,6 +523,19 @@ init_lang() {
         MSG_PANEL_SET_FAIL="Не удалось задать порт панели"
         MSG_APPLY="Применение правил UFW для интерфейса %s"
         MSG_RULE="Правило: %s"
+        MSG_OK="OK"
+        MSG_CMD_FAIL="Команда не выполнена: %s"
+        MSG_ROOT_REQUIRED="Требуются права root (sudo)"
+        MSG_BRNF_SETUP="Настройка br_netfilter..."
+        MSG_BRNF_MODPROBE_FAIL="Не удалось загрузить модуль br_netfilter"
+        MSG_BRNF_AUTOLOAD_ADDED="br_netfilter добавлен в автозагрузку"
+        MSG_BRNF_AUTOLOAD_EXISTS="br_netfilter уже в автозагрузке"
+        MSG_DHCP_DISABLED="DHCP отключен по запросу"
+        MSG_DHCP_ENABLING="Включение DHCP на мосте %s..."
+        MSG_DHCP_V4_ON="IPv4 DHCP включен"
+        MSG_DHCP_V4_FAIL="Не удалось включить IPv4 DHCP"
+        MSG_DHCP_V6_ON="IPv6 DHCP (stateful) включен"
+        MSG_DHCP_V6_FAIL="Не удалось включить IPv6 DHCP (возможно не поддерживается)"
         MSG_DONE="Готово. Правила применены."
         MSG_UFW_INACTIVE="UFW неактивен — правила будут добавлены и применятся после 'ufw enable'"
         MSG_DEPS_MISSING="Не найдены утилиты:"
@@ -551,6 +564,19 @@ init_lang() {
         MSG_PANEL_SET_FAIL="Failed to set panel port"
         MSG_APPLY="Applying UFW rules for interface %s"
         MSG_RULE="Rule: %s"
+        MSG_OK="OK"
+        MSG_CMD_FAIL="Command failed: %s"
+        MSG_ROOT_REQUIRED="Root privileges required (sudo)"
+        MSG_BRNF_SETUP="Setting up br_netfilter..."
+        MSG_BRNF_MODPROBE_FAIL="Failed to load br_netfilter module"
+        MSG_BRNF_AUTOLOAD_ADDED="br_netfilter enabled at boot"
+        MSG_BRNF_AUTOLOAD_EXISTS="br_netfilter already enabled at boot"
+        MSG_DHCP_DISABLED="DHCP disabled by request"
+        MSG_DHCP_ENABLING="Enabling DHCP on bridge %s..."
+        MSG_DHCP_V4_ON="IPv4 DHCP enabled"
+        MSG_DHCP_V4_FAIL="Failed to enable IPv4 DHCP"
+        MSG_DHCP_V6_ON="IPv6 DHCP (stateful) enabled"
+        MSG_DHCP_V6_FAIL="Failed to enable IPv6 DHCP (may not be supported)"
         MSG_DONE="Done. Rules applied."
         MSG_UFW_INACTIVE="UFW is inactive — rules will be added and take effect after 'ufw enable'"
         MSG_DEPS_MISSING="Missing utilities:"
