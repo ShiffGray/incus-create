@@ -57,9 +57,29 @@ ask_name() {
 
     BASE_NAME="$NAME"
 }
+# имя хостинга из /etc/hosts (домен сервера) — дефолт описания сертификата
+detect_hosting() {
+    local fqdn="" label
+    # ищем первый токен с точкой, который не является IP-адресом
+    # (IPv6 не проходит по точке, чистые IPv4 отсекаются ^[0-9.]+$)
+    fqdn="$(awk '!/^[[:space:]]*#/ { for (i=1; i<=NF; i++) if ($i ~ /\./ && $i !~ /^[0-9.]+$/) { print $i; exit } }' /etc/hosts 2>/dev/null)"
+    if [ -z "$fqdn" ]; then
+        fqdn="$(hostname -f 2>/dev/null)"
+    fi
+    case "$fqdn" in
+        *.*)
+            label="${fqdn#*.}"   # часть после имени хоста
+            label="${label%%.*}" # первый ярлык домена (хостинг)
+            [ -n "$label" ] && { echo "$label"; return 0; }
+            ;;
+    esac
+    echo "$HOSTNAME"
+}
 ask_desc() {
-    read -r -p "$(printf "$MSG_ASK_DESC" "${HOSTNAME}_home")" DESC
-    if [ -z "$DESC" ]; then DESC="$NAME"; fi
+    local DEFAULT_DESC
+    DEFAULT_DESC="${HOSTNAME}_$(detect_hosting)"
+    read -r -p "$(printf "$MSG_ASK_DESC" "$DEFAULT_DESC")" DESC
+    if [ -z "$DESC" ]; then DESC="$DEFAULT_DESC"; fi
 }
 ask_password() {
     while true; do
