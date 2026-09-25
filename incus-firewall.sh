@@ -349,6 +349,9 @@ apply_rules() {
     run_cmd ufw allow out on "$IFACE"
     # DHCP (UDP 67) нужен во всех режимах — контейнеры получают IP по broadcast
     run_cmd ufw allow in on "$IFACE" proto udp to any port 67
+    # DHCPv6 (UDP 546,547) — без него контейнеры с ipv6.dhcp.stateful
+    # не получают IPv6 в локалке (их SOLICIT на 547 режется UFW)
+    run_cmd ufw allow in on "$IFACE" proto udp to any port 546,547
 
     if [ "$ACCESS_MODE" = "full" ]; then
         run_cmd ufw allow in on "$IFACE"
